@@ -1,0 +1,9 @@
+{
+    "name":			"dropboxAndNodeJs",
+    "version":		"0.0.1",
+    "description":	"Dropbox test app",
+    "dependencies": {
+        "express":			"4.4.4"
+    },
+    "author":		"thomasheigl2@gmail.com"
+}
