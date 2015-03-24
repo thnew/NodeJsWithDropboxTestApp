@@ -8,8 +8,8 @@ var expressSession = require('express-session');
 /*/ Access Codes for your app
 https://www.dropbox.com/developers/apps > your app > Copy "App key" and "Secret Key"
 //*/
-var APP_KEY = "t6v0mfgjkna96ii";
-var APP_SECRET = "kicdy25nz74hp83";
+var APP_KEY = "gfe7vaazvntivhe";
+var APP_SECRET = "v7x2vkozelzl36q";
 
 // Instantiate the server
 var app = express();
@@ -123,7 +123,7 @@ function _receiveAccountInfo(error, response, body, res) {
 	res.send('Logged in successfully as ' + data.display_name);
 };
 
-var formidable = require('formidable')
+var formidable = require('formidable');
 
 // Deliver simplest possible interface to choose a file to upload
 app.get('/upload', function (req, res) {
@@ -145,24 +145,31 @@ app.post('/upload', function (req, res) {
 	});
 });
 
+var fs = require('fs');
+
 function _parsedFileRequest(error, fields, files, req, res) {
 	if (error) return res.send('ERROR: ' + error);
 
 	// Check if files available
-	if (files < 0) throw "No file given!";
+	if (files.length < 0) throw "No file given!";
 	
+	// Workaround to get the first file
 	var file;
-	for (var f in files) file = files[f];
+	for (var f in files)
+	{
+		file = files[f];
+		break;
+	}
 	
-	fs.readFile(localpath, 'utf8', function(error, data) {
-		_uploadFileReaded(error, data, req, res);
+	fs.readFile(file.path, function(error, data) {
+		_uploadFileReaded(error, data, file.name, req, res);
 	});
 };
 
-function _uploadFileReaded(error, data, req, res) {
+function _uploadFileReaded(error, data, filename, req, res) {
 	if (req.error) res.send("ERROR: " + req.error);
 	
-	fileupload(req.session.token, file, filename, function (req) {
+	fileupload(req.session.token, data, filename, function (req) {
 		if (req.error) res.send("ERROR: " + req.error);
 		else res.send("Uploaded!");
 	});
@@ -186,14 +193,15 @@ function fileupload(token, content, filename, callback){
 };
 
 function _uploadCallback(error, httpResponse, bodymsg, callback) {
+	var resp = JSON.parse(bodymsg);
+	error = error || resp.error;
+	
 	if(error)
 	{
 		callback({ error: error });
 	}
 	else
 	{
-		console.log(bodymsg);
-		
-		callback();
+		callback({});
 	}
 };
