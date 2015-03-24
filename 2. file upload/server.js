@@ -123,12 +123,13 @@ function _receiveAccountInfo(error, response, body, res) {
 	res.send('Logged in successfully as ' + data.display_name);
 };
 
+// For parsing file requests
 var formidable = require('formidable');
 
 // Deliver simplest possible interface to choose a file to upload
 app.get('/upload', function (req, res) {
 	var html = '<form action="upload" method="POST" enctype="multipart/form-data">';
-	html += '<input name="uploadMe" type="file" /><input type="submit">';
+		html += '<input name="uploadMe" type="file" /><input type="submit">';
 	html += '</form>';
 
 	res.send(html);
@@ -137,21 +138,23 @@ app.get('/upload', function (req, res) {
 // Receive files and upload them to Dropbox
 app.post('/upload', function (req, res) {
 	if (req.query.error) return res.send('ERROR: ' + req.query.error + ': ' + req.query.error_description);
-
+	
 	var form = new formidable.IncomingForm();
-
+	
+	// formidable reads files out of a request-object
 	form.parse(req, function (error, fields, files) {
-		_parsedFileRequest(error, fields, files, req, res);
+		// Check for errors
+		if (error) return res.send('ERROR: ' + error);
+		// If no erros, handle received file
+		else _parsedFileRequest(files, req, res);
 	});
 });
 
 var fs = require('fs');
 
-function _parsedFileRequest(error, fields, files, req, res) {
-	if (error) return res.send('ERROR: ' + error);
-
+function _parsedFileRequest(files, req, res) {
 	// Check if files available
-	if (files.length < 0) throw "No file given!";
+	if (files.length < 0) return res.send("ERROR: No file given!");
 	
 	// Workaround to get the first file
 	var file;
@@ -162,46 +165,34 @@ function _parsedFileRequest(error, fields, files, req, res) {
 	}
 	
 	fs.readFile(file.path, function(error, data) {
-		_uploadFileReaded(error, data, file.name, req, res);
+		_onUploadFileReaded(error, data, file.name, req, res);
 	});
 };
 
-function _uploadFileReaded(error, data, filename, req, res) {
-	if (req.error) res.send("ERROR: " + req.error);
-	
-	fileupload(req.session.token, data, filename, function (req) {
+function _onUploadFileReaded(error, data, filename, req, res) {
+	doFileUpload(req.session.token, data, filename, function (req) {
 		if (req.error) res.send("ERROR: " + req.error);
 		else res.send("Uploaded!");
 	});
 };
 
-function fileupload(token, content, filename, callback){
+function doFileUpload(token, content, filename, callback){
 	var options = {
-		body:	content,
+		body: content,
 		headers: {
-			Authorization:	'Bearer ' + token,
-			'Content-Type':	'application/octet-stream'
+			Authorization:	"Bearer " + token,
+			"Content-Type":	"application/octet-stream"
 		}
 	};
 	
-	var url = 'https://api-content.dropbox.com/1/files_put/auto/' + filename;
+	var url = "https://api-content.dropbox.com/1/files_put/auto/" + filename;
 	
 	// Send upload request to dropbox
 	request.put(url, options, function(error, httpResponse, bodymsg) {
-		_uploadCallback(error, httpResponse, bodymsg, callback);
+		var returnMe = {};
+		var resp = JSON.parse(bodymsg);
+		returnMe.error = error || resp.error;
+		
+		callback(returnMe);
 	});
-};
-
-function _uploadCallback(error, httpResponse, bodymsg, callback) {
-	var resp = JSON.parse(bodymsg);
-	error = error || resp.error;
-	
-	if(error)
-	{
-		callback({ error: error });
-	}
-	else
-	{
-		callback({});
-	}
 };
