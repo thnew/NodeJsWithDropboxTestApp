@@ -1,0 +1,14 @@
+{
+    "name":			"dropboxAndNodeJs",
+    "version":		"0.0.1",
+    "description":	"Dropbox test app",
+    "dependencies": {
+        "express":			"4.11.1",
+		"sessionstore":		"1.0.5",
+		"express-session":	"1.10.1",
+		"crypto":			"0.0.3",
+		"request":			"2.51.0",
+		"formidable":		"1.0.17"
+    },
+    "author":		"thomasheigl2@gmail.com"
+}
