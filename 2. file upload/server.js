@@ -156,7 +156,7 @@ function _parsedFileRequest(files, req, res) {
 	// Check if files available
 	if (files.length < 0) return res.send("ERROR: No file given!");
 	
-	// Workaround to get the first file
+	// Get the first file
 	var file;
 	for (var f in files)
 	{
@@ -164,27 +164,29 @@ function _parsedFileRequest(files, req, res) {
 		break;
 	}
 	
+	// Read the uploaded file
 	fs.readFile(file.path, function(error, data) {
+		// Call the handler for a readed upload-file
 		_onUploadFileReaded(error, data, file.name, req, res);
 	});
 };
 
 function _onUploadFileReaded(error, data, filename, req, res) {
+	// Pass the file to upload to upload-function and define a callback for it
 	doFileUpload(req.session.token, data, filename, function (req) {
 		if (req.error) res.send("ERROR: " + req.error);
 		else res.send("Uploaded!");
 	});
 };
 
-function doFileUpload(token, content, filename, callback){
-	var options = {
-		body: content,
-		headers: {
-			Authorization:	"Bearer " + token,
-			"Content-Type":	"application/octet-stream"
-		}
-	};
+function doFileUpload(token, data, filename, callback){
+	var options = { body: data, headers: {} };
+	options.headers["Content-Type"] = "application/octet-stream";
 	
+	// Authorization
+	options.headers.Authorization = "Bearer " + token;
+	
+	// Upload URL
 	var url = "https://api-content.dropbox.com/1/files_put/auto/" + filename;
 	
 	// Send upload request to dropbox
